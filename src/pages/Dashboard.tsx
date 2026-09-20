@@ -48,6 +48,7 @@ export default function Dashboard() {
   const cat76Count = vehicles.filter((v) => v.model_category === ModelCategory.Market76).length
   const cat78Count = vehicles.filter((v) => v.model_category === ModelCategory.Market78).length
   const cat79Count = vehicles.filter((v) => v.model_category === ModelCategory.Pickup79).length
+  const cat105Count = vehicles.filter((v) => v.model_category === ModelCategory.Series105).length
 
   // Filter vehicles for Table View
   const filteredVehiclesForTable = vehicles.filter((v) => {
@@ -312,21 +313,28 @@ export default function Dashboard() {
             onClick={() => setSelectedCategory(ModelCategory.Market76)}
             id="cat-tab-76"
           >
-            76 Market ({cat76Count})
+            76 Mark II ({cat76Count})
           </button>
           <button
             className={`role-tab-btn ${selectedCategory === ModelCategory.Market78 ? 'active' : ''}`}
             onClick={() => setSelectedCategory(ModelCategory.Market78)}
             id="cat-tab-78"
           >
-            78 Market ({cat78Count})
+            78 Long Base ({cat78Count})
           </button>
           <button
             className={`role-tab-btn ${selectedCategory === ModelCategory.Pickup79 ? 'active' : ''}`}
             onClick={() => setSelectedCategory(ModelCategory.Pickup79)}
             id="cat-tab-79"
           >
-            79 Pickup ({cat79Count})
+            79 Pick Up ({cat79Count})
+          </button>
+          <button
+            className={`role-tab-btn ${selectedCategory === ModelCategory.Series105 ? 'active' : ''}`}
+            onClick={() => setSelectedCategory(ModelCategory.Series105)}
+            id="cat-tab-105"
+          >
+            105 Series ({cat105Count})
           </button>
         </div>
 
@@ -404,6 +412,12 @@ export default function Dashboard() {
           {(selectedCategory === 'ALL' || selectedCategory === ModelCategory.Pickup79) && (
             <VehicleCategorySection
               category={ModelCategory.Pickup79}
+              searchQuery={searchQuery}
+            />
+          )}
+          {(selectedCategory === 'ALL' || selectedCategory === ModelCategory.Series105) && (
+            <VehicleCategorySection
+              category={ModelCategory.Series105}
               searchQuery={searchQuery}
             />
           )}

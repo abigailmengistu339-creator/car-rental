@@ -1705,6 +1705,12 @@ button, input, select, textarea {
 .cat-79-border { border-color: rgba(59, 130, 246, 0.25); }
 .light .cat-79-text { color: #2563eb; }
 
+/* 105 Series — Violet */
+.cat-105-bg { background: rgba(139, 92, 246, 0.12); }
+.cat-105-text { color: #8b5cf6; }
+.cat-105-border { border-color: rgba(139, 92, 246, 0.25); }
+.light .cat-105-text { color: #7c3aed; }
+
 /* Roles */
 .role-driver-bg { background: rgba(16, 185, 129, 0.12); }
 .role-driver-text { color: #10b981; }

@@ -12,6 +12,7 @@ export enum ModelCategory {
   Market76 = '76_Market',
   Market78 = '78_Market',
   Pickup79 = '79_Pickup',
+  Series105 = '105_Series',
 }
 
 export enum OperationalStatus {
@@ -21,9 +22,10 @@ export enum OperationalStatus {
 }
 
 export const MODEL_CATEGORY_LABELS: Record<ModelCategory, string> = {
-  [ModelCategory.Market76]: '76 (Market)',
-  [ModelCategory.Market78]: '78 (Market)',
-  [ModelCategory.Pickup79]: '79 (Pickup)',
+  [ModelCategory.Market76]: '76 (Mark II)',
+  [ModelCategory.Market78]: '78 (Long Base)',
+  [ModelCategory.Pickup79]: '79 (Pick Up)',
+  [ModelCategory.Series105]: '105 (Series)',
 };
 
 // CSS class-based colors that adapt to light/dark via custom properties
@@ -31,6 +33,7 @@ export const MODEL_CATEGORY_COLORS: Record<ModelCategory, { bg: string; text: st
   [ModelCategory.Market76]: { bg: 'cat-76-bg', text: 'cat-76-text', border: 'cat-76-border' },
   [ModelCategory.Market78]: { bg: 'cat-78-bg', text: 'cat-78-text', border: 'cat-78-border' },
   [ModelCategory.Pickup79]: { bg: 'cat-79-bg', text: 'cat-79-text', border: 'cat-79-border' },
+  [ModelCategory.Series105]: { bg: 'cat-105-bg', text: 'cat-105-text', border: 'cat-105-border' },
 };
 
 export const ROLE_COLORS: Record<UserRole, { bg: string; text: string }> = {
