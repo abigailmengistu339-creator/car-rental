@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { Upload, CheckCircle2, AlertCircle, Eye, Download, Trash2, Loader2, FileText } from 'lucide-react'
 import { useUploadDocument } from '@/hooks/useVehicles'
 import { DocumentViewerModal } from './DocumentViewerModal'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 
 interface DocumentUploadProps {
   vehicleId: string
@@ -30,6 +31,8 @@ export function DocumentUpload({
 }: DocumentUploadProps) {
   const [dragActive, setDragActive] = useState(false)
   const [viewerOpen, setViewerOpen] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { uploadDocument, deleteDocument, uploading } = useUploadDocument()
 
@@ -63,10 +66,14 @@ export function DocumentUpload({
     if (file) handleFile(file)
   }
 
-  const handleDelete = async () => {
-    if (confirm(`Are you sure you want to remove this ${label}?`)) {
+  const handleDeleteConfirm = async () => {
+    setDeleting(true)
+    try {
       await deleteDocument(vehicleId, docType)
       if (onDeleteComplete) onDeleteComplete()
+    } finally {
+      setDeleting(false)
+      setConfirmOpen(false)
     }
   }
 
@@ -169,7 +176,7 @@ export function DocumentUpload({
               {/* Delete Button (admin only) */}
               {!readOnly && (
                 <button
-                  onClick={handleDelete}
+                  onClick={() => setConfirmOpen(true)}
                   style={{
                     padding: '6px 8px',
                     borderRadius: '8px',
@@ -252,6 +259,18 @@ export function DocumentUpload({
         fileName={fileName}
         fileSize={fileSize}
         uploadDate={uploadDate}
+      />
+
+      {/* In-App Confirm Delete Modal */}
+      <ConfirmModal
+        isOpen={confirmOpen}
+        title={`Remove ${label}?`}
+        message={`This will permanently delete the ${label.toLowerCase()} document from this vehicle's records. This action cannot be undone.`}
+        confirmLabel="Remove Document"
+        isDestructive
+        loading={deleting}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setConfirmOpen(false)}
       />
     </>
   )

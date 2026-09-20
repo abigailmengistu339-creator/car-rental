@@ -279,6 +279,7 @@ export function useUpdateVehicle() {
         saveMockVehicles(updated);
       }
 
+      window.dispatchEvent(new Event('fleet_storage_update'));
       return true;
     } catch (err) {
       console.warn('Supabase update failed, updating locally:', err);
@@ -288,6 +289,7 @@ export function useUpdateVehicle() {
         updated[idx] = { ...updated[idx], ...data };
         saveMockVehicles(updated);
       }
+      window.dispatchEvent(new Event('fleet_storage_update'));
       return true;
     } finally {
       setLoading(false);
@@ -295,6 +297,42 @@ export function useUpdateVehicle() {
   };
 
   return { updateVehicle, loading };
+}
+
+export function useDeleteVehicle() {
+  const [loading, setLoading] = useState(false);
+
+  const deleteVehicle = async (id: string): Promise<boolean> => {
+    setLoading(true);
+
+    if (USE_MOCK_DATA) {
+      const updated = mockVehicles.filter((v) => v.id !== id);
+      saveMockVehicles(updated);
+      window.dispatchEvent(new Event('fleet_storage_update'));
+      setLoading(false);
+      return true;
+    }
+
+    try {
+      const { error } = await supabase.from('vehicles').delete().eq('id', id);
+      if (error) throw error;
+
+      const updated = mockVehicles.filter((v) => v.id !== id);
+      saveMockVehicles(updated);
+      window.dispatchEvent(new Event('fleet_storage_update'));
+      return true;
+    } catch (err) {
+      console.warn('Supabase delete failed, deleting locally:', err);
+      const updated = mockVehicles.filter((v) => v.id !== id);
+      saveMockVehicles(updated);
+      window.dispatchEvent(new Event('fleet_storage_update'));
+      return true;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { deleteVehicle, loading };
 }
 
 // Convert File to Base64 Data URL helper

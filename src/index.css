@@ -231,10 +231,18 @@ button, input, select, textarea {
    ============================================================================= */
 .app-shell {
   display: flex;
+  flex-direction: column;
   min-height: 100dvh;
+  width: 100%;
   background-color: var(--background);
   background-image: radial-gradient(at 10% 10%, rgba(245, 158, 11, 0.035) 0px, transparent 50%),
                     radial-gradient(at 90% 60%, rgba(59, 130, 246, 0.03) 0px, transparent 50%);
+}
+
+@media (min-width: 768px) {
+  .app-shell {
+    flex-direction: row;
+  }
 }
 
 /* Specular physical highlights */
@@ -496,6 +504,8 @@ button, input, select, textarea {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
   height: calc(60px + env(safe-area-inset-top, 0px));
   padding-top: env(safe-area-inset-top, 0px);
   padding-left: max(16px, env(safe-area-inset-left, 0px));
@@ -591,30 +601,42 @@ button, input, select, textarea {
 /* ---- MAIN CONTENT WRAPPER ---- */
 .app-main {
   flex: 1;
+  width: 100%;
   min-width: 0;
+  box-sizing: border-box;
   padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); /* Generous space for mobile dock */
 }
 
 @media (min-width: 768px) {
   .app-main {
     margin-left: 260px;
+    width: calc(100% - 260px);
     padding-bottom: 36px;
   }
 }
 
 .page-container {
+  width: 100%;
+  box-sizing: border-box;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 24px 20px;
+  padding: 20px 16px;
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 24px;
   animation: fade-in-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes fade-in-up {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@media (min-width: 768px) {
+  .page-container {
+    padding: 24px 24px;
+    gap: 28px;
+  }
 }
 
 @media (min-width: 1024px) {

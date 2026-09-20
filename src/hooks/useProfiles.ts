@@ -143,6 +143,7 @@ export function useCreateProfile() {
         created_at: new Date().toISOString(),
       };
       saveMockProfiles([newProfile, ...mockProfiles]);
+      window.dispatchEvent(new Event('fleet_storage_update'));
       return newProfile;
     } finally {
       setLoading(false);
@@ -150,4 +151,88 @@ export function useCreateProfile() {
   };
 
   return { createProfile, loading };
+}
+
+export function useUpdateProfile() {
+  const [loading, setLoading] = useState(false);
+
+  const updateProfile = async (id: string, data: Partial<Profile>): Promise<boolean> => {
+    setLoading(true);
+
+    if (USE_MOCK_DATA) {
+      const idx = mockProfiles.findIndex((p) => p.id === id);
+      if (idx !== -1) {
+        const updated = [...mockProfiles];
+        updated[idx] = { ...updated[idx], ...data };
+        saveMockProfiles(updated);
+      }
+      window.dispatchEvent(new Event('fleet_storage_update'));
+      setLoading(false);
+      return true;
+    }
+
+    try {
+      const { error } = await supabase.from('profiles').update(data).eq('id', id);
+      if (error) throw error;
+
+      const idx = mockProfiles.findIndex((p) => p.id === id);
+      if (idx !== -1) {
+        const updated = [...mockProfiles];
+        updated[idx] = { ...updated[idx], ...data };
+        saveMockProfiles(updated);
+      }
+      window.dispatchEvent(new Event('fleet_storage_update'));
+      return true;
+    } catch (err) {
+      console.warn('Supabase profile update failed, updating locally:', err);
+      const idx = mockProfiles.findIndex((p) => p.id === id);
+      if (idx !== -1) {
+        const updated = [...mockProfiles];
+        updated[idx] = { ...updated[idx], ...data };
+        saveMockProfiles(updated);
+      }
+      window.dispatchEvent(new Event('fleet_storage_update'));
+      return true;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { updateProfile, loading };
+}
+
+export function useDeleteProfile() {
+  const [loading, setLoading] = useState(false);
+
+  const deleteProfile = async (id: string): Promise<boolean> => {
+    setLoading(true);
+
+    if (USE_MOCK_DATA) {
+      const updated = mockProfiles.filter((p) => p.id !== id);
+      saveMockProfiles(updated);
+      window.dispatchEvent(new Event('fleet_storage_update'));
+      setLoading(false);
+      return true;
+    }
+
+    try {
+      const { error } = await supabase.from('profiles').delete().eq('id', id);
+      if (error) throw error;
+
+      const updated = mockProfiles.filter((p) => p.id !== id);
+      saveMockProfiles(updated);
+      window.dispatchEvent(new Event('fleet_storage_update'));
+      return true;
+    } catch (err) {
+      console.warn('Supabase profile delete failed, deleting locally:', err);
+      const updated = mockProfiles.filter((p) => p.id !== id);
+      saveMockProfiles(updated);
+      window.dispatchEvent(new Event('fleet_storage_update'));
+      return true;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { deleteProfile, loading };
 }
