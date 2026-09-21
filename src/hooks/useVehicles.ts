@@ -229,6 +229,7 @@ export function useCreateVehicle() {
         .select()
         .single();
       if (error) throw error;
+      window.dispatchEvent(new Event('fleet_storage_update'));
       return created;
     } catch (err) {
       console.warn('Supabase vehicle creation failed, saving locally:', err);

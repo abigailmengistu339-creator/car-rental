@@ -265,6 +265,7 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
           isOpen={editModalOpen}
           vehicle={vehicle}
           onClose={() => setEditModalOpen(false)}
+          onSuccess={() => setEditModalOpen(false)}
         />
       )}
 

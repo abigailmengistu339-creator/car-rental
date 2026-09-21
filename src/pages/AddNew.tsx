@@ -145,6 +145,7 @@ function ContactForm({
 }
 
 // ---- Vehicle Form ----
+// ---- Vehicle Form ----
 function VehicleForm({
   onSuccess,
   onError,
@@ -152,8 +153,15 @@ function VehicleForm({
   onSuccess: () => void
   onError: () => void
 }) {
-  const { createVehicle, loading } = useCreateVehicle()
-  const { profiles: drivers } = useProfiles(UserRole.Driver)
+  const { createVehicle, loading: creatingVehicle } = useCreateVehicle()
+  const { createProfile, loading: creatingProfile } = useCreateProfile()
+  const { profiles: drivers, loading: driversLoading } = useProfiles(UserRole.Driver)
+  const { error: toastError } = useToast()
+
+  const [driverMode, setDriverMode] = useState<'select' | 'new'>('select')
+  const [newDriverName, setNewDriverName] = useState('')
+  const [newDriverPhone, setNewDriverPhone] = useState('')
+
   const [formData, setFormData] = useState({
     plate_number: '',
     model_category: ModelCategory.Market76,
@@ -163,12 +171,34 @@ function VehicleForm({
     insurance_document_url: null as string | null,
   })
 
+  const isSubmitting = creatingVehicle || creatingProfile
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.plate_number.trim()) return
+
+    let finalDriverId = formData.driver_id || null
+
+    if (driverMode === 'new') {
+      if (!newDriverName.trim()) {
+        toastError('Please enter the driver full name or switch to select existing.')
+        return
+      }
+      const created = await createProfile({
+        full_name: newDriverName.trim(),
+        phone_number: newDriverPhone.trim() || '',
+        role: UserRole.Driver,
+      })
+      if (!created) {
+        toastError('Failed to create driver contact.')
+        return
+      }
+      finalDriverId = created.id
+    }
+
     const result = await createVehicle({
       ...formData,
-      driver_id: formData.driver_id || null,
+      driver_id: finalDriverId,
     })
     if (result) {
       onSuccess()
@@ -185,10 +215,11 @@ function VehicleForm({
           id="plate_number"
           type="text"
           className="apple-input"
-          placeholder="e.g. 00176-101-16"
+          placeholder="e.g. 03-A65000"
           value={formData.plate_number}
           onChange={(e) => setFormData({ ...formData, plate_number: e.target.value })}
           required
+          disabled={isSubmitting}
         />
       </div>
 
@@ -199,6 +230,7 @@ function VehicleForm({
           className="apple-select"
           value={formData.model_category}
           onChange={(e) => setFormData({ ...formData, model_category: e.target.value as ModelCategory })}
+          disabled={isSubmitting}
         >
           {Object.values(ModelCategory).map((cat) => (
             <option key={cat} value={cat}>
@@ -208,21 +240,107 @@ function VehicleForm({
         </select>
       </div>
 
-      <div className="field-group">
-        <label className="field-label" htmlFor="driver_id">Assign Initial Driver</label>
-        <select
-          id="driver_id"
-          className="apple-select"
-          value={formData.driver_id || ''}
-          onChange={(e) => setFormData({ ...formData, driver_id: e.target.value || null })}
-        >
-          <option value="">— No Driver Assigned —</option>
-          {drivers.map((driver) => (
-            <option key={driver.id} value={driver.id}>
-              {driver.full_name} ({driver.phone_number || 'No phone'})
-            </option>
-          ))}
-        </select>
+      {/* Assigned Driver Section */}
+      <div className="field-group" style={{ background: 'var(--muted)', padding: '14px', borderRadius: '16px', border: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+          <label className="field-label" style={{ margin: 0 }}>Assign Initial Driver</label>
+          <div style={{ display: 'flex', gap: '4px', background: 'var(--card)', padding: '3px', borderRadius: '10px', border: '1px solid var(--border)' }}>
+            <button
+              type="button"
+              onClick={() => setDriverMode('select')}
+              style={{
+                padding: '4px 10px',
+                fontSize: '0.6875rem',
+                fontWeight: 600,
+                borderRadius: '8px',
+                border: 'none',
+                background: driverMode === 'select' ? 'var(--primary)' : 'transparent',
+                color: driverMode === 'select' ? 'var(--primary-foreground)' : 'var(--muted-foreground)',
+                cursor: 'pointer',
+              }}
+            >
+              Select Existing
+            </button>
+            <button
+              type="button"
+              onClick={() => setDriverMode('new')}
+              style={{
+                padding: '4px 10px',
+                fontSize: '0.6875rem',
+                fontWeight: 600,
+                borderRadius: '8px',
+                border: 'none',
+                background: driverMode === 'new' ? 'var(--primary)' : 'transparent',
+                color: driverMode === 'new' ? 'var(--primary-foreground)' : 'var(--muted-foreground)',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              <UserPlus size={11} />
+              <span>+ New Driver</span>
+            </button>
+          </div>
+        </div>
+
+        {driverMode === 'select' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <select
+              id="driver_id"
+              className="apple-select"
+              style={{ width: '100%' }}
+              value={formData.driver_id || ''}
+              onChange={(e) => setFormData({ ...formData, driver_id: e.target.value || null })}
+              disabled={isSubmitting}
+            >
+              <option value="">— No Driver Assigned —</option>
+              {drivers.map((driver) => (
+                <option key={driver.id} value={driver.id}>
+                  {driver.full_name} ({driver.phone_number || 'No phone'})
+                </option>
+              ))}
+            </select>
+            {drivers.length === 0 && !driversLoading && (
+              <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
+                No drivers registered yet. Click <strong>+ New Driver</strong> above to create one now.
+              </p>
+            )}
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'var(--card)', padding: '12px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+            <div>
+              <label style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--muted-foreground)', display: 'block', marginBottom: '4px' }}>
+                Driver Full Name *
+              </label>
+              <input
+                type="text"
+                className="apple-input"
+                style={{ width: '100%', padding: '8px 12px', fontSize: '0.8125rem' }}
+                placeholder="e.g. Abebe Kebede"
+                value={newDriverName}
+                onChange={(e) => setNewDriverName(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--muted-foreground)', display: 'block', marginBottom: '4px' }}>
+                Driver Phone Number
+              </label>
+              <input
+                type="tel"
+                className="apple-input"
+                style={{ width: '100%', padding: '8px 12px', fontSize: '0.8125rem' }}
+                placeholder="e.g. 0911 234 567"
+                value={newDriverPhone}
+                onChange={(e) => setNewDriverPhone(e.target.value)}
+              />
+            </div>
+            <p style={{ margin: 0, fontSize: '0.6875rem', color: 'var(--muted-foreground)' }}>
+              This driver will be created in your directory with the "Driver" role and automatically linked to this vehicle.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="field-group">
@@ -231,9 +349,10 @@ function VehicleForm({
           id="current_location"
           type="text"
           className="apple-input"
-          placeholder="e.g. Bab Ezzouar, Algiers"
+          placeholder="e.g. Addis Ababa"
           value={formData.current_location}
           onChange={(e) => setFormData({ ...formData, current_location: e.target.value })}
+          disabled={isSubmitting}
         />
       </div>
 
@@ -241,9 +360,9 @@ function VehicleForm({
         type="submit"
         className="btn-primary-apple"
         style={{ width: '100%', padding: '12px', marginTop: '8px' }}
-        disabled={loading || !formData.plate_number.trim()}
+        disabled={isSubmitting || !formData.plate_number.trim() || (driverMode === 'new' && !newDriverName.trim())}
       >
-        {loading ? 'Adding Vehicle...' : 'Add Vehicle to Fleet'}
+        {isSubmitting ? 'Adding Vehicle...' : 'Add Vehicle to Fleet'}
       </button>
     </form>
   )

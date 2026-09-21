@@ -361,6 +361,7 @@ export function VehicleTableView({ vehicles }: VehicleTableViewProps) {
           isOpen={!!editingVehicle}
           vehicle={editingVehicle}
           onClose={() => setEditingVehicle(null)}
+          onSuccess={() => setEditingVehicle(null)}
         />
       )}
 

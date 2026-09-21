@@ -1684,6 +1684,12 @@ button, input, select, textarea {
   background: var(--card);
 }
 
+.apple-select option {
+  background-color: var(--card);
+  color: var(--foreground);
+  padding: 8px;
+}
+
 /* =============================================================================
    SEMANTIC CATEGORY & ROLE COLORS
    ============================================================================= */
