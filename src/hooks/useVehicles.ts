@@ -232,6 +232,10 @@ export function useCreateVehicle() {
       window.dispatchEvent(new Event('fleet_storage_update'));
       return created;
     } catch (err) {
+      if (!USE_MOCK_DATA) {
+        // In production mode, surface the actual error (e.g. RLS 403) instead of silently saving locally
+        throw err;
+      }
       console.warn('Supabase vehicle creation failed, saving locally:', err);
       const newVehicle: Vehicle = {
         id: `v${Date.now()}`,
@@ -283,6 +287,9 @@ export function useUpdateVehicle() {
       window.dispatchEvent(new Event('fleet_storage_update'));
       return true;
     } catch (err) {
+      if (!USE_MOCK_DATA) {
+        throw err;
+      }
       console.warn('Supabase update failed, updating locally:', err);
       const idx = mockVehicles.findIndex((v) => v.id === id);
       if (idx !== -1) {
@@ -323,6 +330,9 @@ export function useDeleteVehicle() {
       window.dispatchEvent(new Event('fleet_storage_update'));
       return true;
     } catch (err) {
+      if (!USE_MOCK_DATA) {
+        throw err;
+      }
       console.warn('Supabase delete failed, deleting locally:', err);
       const updated = mockVehicles.filter((v) => v.id !== id);
       saveMockVehicles(updated);
@@ -352,6 +362,21 @@ function formatFileSize(bytes: number): string {
   return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
 }
 
+// Allowed document MIME types (blocks SVG, HTML, executables)
+const ALLOWED_UPLOAD_TYPES = [
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+];
+const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+
+// Sanitize uploaded file names to prevent path traversal and special character injection
+function sanitizeFileName(name: string): string {
+  return name.replace(/[^a-zA-Z0-9._-]/g, '_');
+}
+
 export function useUploadDocument() {
   const [uploading, setUploading] = useState(false);
 
@@ -360,8 +385,23 @@ export function useUploadDocument() {
     file: File,
     docType: 'libre' | 'insurance'
   ): Promise<string | null> => {
+    // SEC-04: Validate file type
+    if (!ALLOWED_UPLOAD_TYPES.includes(file.type)) {
+      throw new Error(
+        `File type "${file.type || 'unknown'}" is not allowed. Please upload PDF, JPEG, PNG, WebP, or GIF files only.`
+      );
+    }
+
+    // Validate file size
+    if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+      throw new Error(
+        `File size (${formatFileSize(file.size)}) exceeds the 10 MB limit.`
+      );
+    }
+
     setUploading(true);
 
+    const sanitizedName = sanitizeFileName(file.name);
     const nowFormatted = new Date().toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -380,7 +420,7 @@ export function useUploadDocument() {
             updated[idx] = {
               ...updated[idx],
               libre_document_url: dataUrl,
-              libre_file_name: file.name,
+              libre_file_name: sanitizedName,
               libre_file_size: fileSizeStr,
               libre_upload_date: nowFormatted,
             };
@@ -388,7 +428,7 @@ export function useUploadDocument() {
             updated[idx] = {
               ...updated[idx],
               insurance_document_url: dataUrl,
-              insurance_file_name: file.name,
+              insurance_file_name: sanitizedName,
               insurance_file_size: fileSizeStr,
               insurance_upload_date: nowFormatted,
               insurance_expiry_days: 365,
@@ -407,17 +447,19 @@ export function useUploadDocument() {
     }
 
     try {
-      const filePath = `${vehicleId}/${docType}/${Date.now()}_${file.name}`;
+      // SEC-04: Use sanitized file name to prevent path traversal
+      const filePath = `${vehicleId}/${docType}/${Date.now()}_${sanitizedName}`;
       const { error: uploadError } = await supabase.storage
         .from('documents')
         .upload(filePath, file, { upsert: true });
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
+      // SEC-02: Use signed URLs instead of public URLs for sensitive documents
+      const { data: urlData, error: signError } = await supabase.storage
         .from('documents')
-        .getPublicUrl(filePath);
+        .createSignedUrl(filePath, 900); // 15 minutes validity
 
-      const publicUrl = urlData.publicUrl;
+      const publicUrl = signError ? filePath : (urlData?.signedUrl || filePath);
 
       // Update the vehicle record with document metadata
       const updateField = docType === 'libre' ? 'libre_document_url' : 'insurance_document_url';
@@ -429,7 +471,7 @@ export function useUploadDocument() {
         .from('vehicles')
         .update({
           [updateField]: publicUrl,
-          [nameField]: file.name,
+          [nameField]: sanitizedName,
           [sizeField]: fileSizeStr,
           [dateField]: nowFormatted,
         })
@@ -443,7 +485,7 @@ export function useUploadDocument() {
           updated[idx] = {
             ...updated[idx],
             libre_document_url: publicUrl,
-            libre_file_name: file.name,
+            libre_file_name: sanitizedName,
             libre_file_size: fileSizeStr,
             libre_upload_date: nowFormatted,
           };
@@ -451,7 +493,7 @@ export function useUploadDocument() {
           updated[idx] = {
             ...updated[idx],
             insurance_document_url: publicUrl,
-            insurance_file_name: file.name,
+            insurance_file_name: sanitizedName,
             insurance_file_size: fileSizeStr,
             insurance_upload_date: nowFormatted,
             insurance_expiry_days: 365,

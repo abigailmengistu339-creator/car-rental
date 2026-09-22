@@ -208,6 +208,7 @@ export function DocumentViewerModal({
             <iframe
               src={fileUrl}
               title={title}
+              sandbox="allow-same-origin"
               style={{
                 width: '100%',
                 height: '600px',

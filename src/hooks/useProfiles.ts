@@ -137,6 +137,10 @@ export function useCreateProfile() {
       window.dispatchEvent(new Event('fleet_storage_update'));
       return created;
     } catch (err) {
+      if (!USE_MOCK_DATA) {
+        // In production mode, surface auth errors instead of silently saving locally
+        throw err;
+      }
       console.warn('Supabase profile creation failed, falling back to local save:', err);
       const newProfile: Profile = {
         id: `p${Date.now()}`,
@@ -185,6 +189,9 @@ export function useUpdateProfile() {
       window.dispatchEvent(new Event('fleet_storage_update'));
       return true;
     } catch (err) {
+      if (!USE_MOCK_DATA) {
+        throw err;
+      }
       console.warn('Supabase profile update failed, updating locally:', err);
       const idx = mockProfiles.findIndex((p) => p.id === id);
       if (idx !== -1) {
@@ -225,6 +232,9 @@ export function useDeleteProfile() {
       window.dispatchEvent(new Event('fleet_storage_update'));
       return true;
     } catch (err) {
+      if (!USE_MOCK_DATA) {
+        throw err;
+      }
       console.warn('Supabase profile delete failed, deleting locally:', err);
       const updated = mockProfiles.filter((p) => p.id !== id);
       saveMockProfiles(updated);

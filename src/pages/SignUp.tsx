@@ -52,8 +52,12 @@ export default function SignUp() {
       setError('Please enter your email address.')
       return
     }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long.')
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long.')
+      return
+    }
+    if (!/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+      setError('Password must include at least one uppercase letter and one number.')
       return
     }
     if (password !== confirmPassword) {

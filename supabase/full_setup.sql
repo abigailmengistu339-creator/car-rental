@@ -1,7 +1,7 @@
 -- =============================================================================
 -- Fleet Directory — Full Supabase Database Schema & Seed Script
 -- Run this in Supabase SQL Editor:
--- https://supabase.com/dashboard/project/hybctbkdljvhqschbbfg/sql/new
+-- https://supabase.com/dashboard/project/<YOUR_PROJECT_REF>/sql/new
 -- =============================================================================
 
 -- 1. Create custom ENUM types

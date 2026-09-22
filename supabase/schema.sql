@@ -37,49 +37,69 @@ CREATE INDEX idx_profiles_role ON profiles(role);
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vehicles ENABLE ROW LEVEL SECURITY;
 
--- 6. RLS Policies (MVP: open access — tighten with auth later)
-CREATE POLICY "Allow public read on profiles"
-  ON profiles FOR SELECT USING (true);
+-- 6. RLS Policies (Restrict all access to authenticated users only)
+CREATE POLICY "Allow authenticated read on profiles"
+  ON profiles FOR SELECT
+  TO authenticated
+  USING (true);
 
-CREATE POLICY "Allow public insert on profiles"
-  ON profiles FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow authenticated insert on profiles"
+  ON profiles FOR INSERT
+  TO authenticated
+  WITH CHECK (true);
 
-CREATE POLICY "Allow public update on profiles"
-  ON profiles FOR UPDATE USING (true);
+CREATE POLICY "Allow authenticated update on profiles"
+  ON profiles FOR UPDATE
+  TO authenticated
+  USING (true);
 
-CREATE POLICY "Allow public delete on profiles"
-  ON profiles FOR DELETE USING (true);
+CREATE POLICY "Allow authenticated delete on profiles"
+  ON profiles FOR DELETE
+  TO authenticated
+  USING (true);
 
-CREATE POLICY "Allow public read on vehicles"
-  ON vehicles FOR SELECT USING (true);
+CREATE POLICY "Allow authenticated read on vehicles"
+  ON vehicles FOR SELECT
+  TO authenticated
+  USING (true);
 
-CREATE POLICY "Allow public insert on vehicles"
-  ON vehicles FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow authenticated insert on vehicles"
+  ON vehicles FOR INSERT
+  TO authenticated
+  WITH CHECK (true);
 
-CREATE POLICY "Allow public update on vehicles"
-  ON vehicles FOR UPDATE USING (true);
+CREATE POLICY "Allow authenticated update on vehicles"
+  ON vehicles FOR UPDATE
+  TO authenticated
+  USING (true);
 
-CREATE POLICY "Allow public delete on vehicles"
-  ON vehicles FOR DELETE USING (true);
+CREATE POLICY "Allow authenticated delete on vehicles"
+  ON vehicles FOR DELETE
+  TO authenticated
+  USING (true);
 
--- 7. Storage bucket for vehicle documents (Libre & Insurance)
+-- 7. Storage bucket for vehicle documents (Private — use signed URLs)
 INSERT INTO storage.buckets (id, name, public)
-VALUES ('documents', 'documents', true)
-ON CONFLICT (id) DO NOTHING;
+VALUES ('documents', 'documents', false)
+ON CONFLICT (id) DO UPDATE SET public = false;
 
--- Storage policies
-CREATE POLICY "Allow public upload to documents"
+-- Storage policies (authenticated users only)
+CREATE POLICY "Allow authenticated upload to documents"
   ON storage.objects FOR INSERT
+  TO authenticated
   WITH CHECK (bucket_id = 'documents');
 
-CREATE POLICY "Allow public read from documents"
+CREATE POLICY "Allow authenticated read from documents"
   ON storage.objects FOR SELECT
+  TO authenticated
   USING (bucket_id = 'documents');
 
-CREATE POLICY "Allow public update in documents"
+CREATE POLICY "Allow authenticated update in documents"
   ON storage.objects FOR UPDATE
+  TO authenticated
   USING (bucket_id = 'documents');
 
-CREATE POLICY "Allow public delete from documents"
+CREATE POLICY "Allow authenticated delete from documents"
   ON storage.objects FOR DELETE
+  TO authenticated
   USING (bucket_id = 'documents');
